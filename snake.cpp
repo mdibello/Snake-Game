@@ -8,8 +8,8 @@
 
 using namespace std;
 
-const int GRID_WIDTH = 10;
-const int GRID_HEIGHT = 10;
+const int GRID_WIDTH = 20;
+const int GRID_HEIGHT = 20;
 const int SCREEN_WIDTH = 900;
 const int SCREEN_HEIGHT = 900;
 
@@ -44,6 +44,7 @@ class Object {
 };
 
 void render(sf::RenderWindow& window, Grid world);
+void drawGrid(sf::RenderWindow& window, Grid world);
 
 int main() {
 	
@@ -55,7 +56,7 @@ int main() {
 	window.setFramerateLimit(60);
 	window.setKeyRepeatEnabled(false);
 
-	window.clear(sf::Color(0, 0, 255));
+	window.clear(sf::Color::Green);
 	window.display();
 	
 	Grid world(GRID_WIDTH, GRID_HEIGHT);
@@ -93,6 +94,26 @@ int main() {
 
 void render(sf::RenderWindow& window, Grid world) {
 	window.clear(sf::Color::Black);
-	
+	drawGrid(window, world);
 	window.display();
+}
+
+void drawGrid(sf::RenderWindow& window, Grid world) {
+	sf::Color colorOne(0, 25, 51);
+	sf::Color colorTwo(32, 32, 32);
+	float tile_height = SCREEN_HEIGHT / GRID_HEIGHT;
+	float tile_width = SCREEN_WIDTH / GRID_WIDTH;
+	for (int i = 0; i < world.getHeight(); i++) {
+		for (int j = 0; j < world.getWidth(); j++) {
+			sf::RectangleShape rectangle(sf::Vector2f(tile_width, tile_height));
+			rectangle.setPosition(tile_width * j, tile_height * i);
+			if ((i + j) % 2 == 0) {
+				rectangle.setFillColor(colorTwo);
+			}
+			else {
+				rectangle.setFillColor(colorOne);
+			}
+			window.draw(rectangle);
+		}
+	}
 }
