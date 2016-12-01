@@ -13,7 +13,10 @@ const int GRID_HEIGHT = 20;
 const int SCREEN_WIDTH = 900;
 const int SCREEN_HEIGHT = 900;
 
-struct coord {
+enum Obj { EMPTY, FRUIT, SNAKE };
+enum Direction { UP, DOWN, LEFT, RIGHT };
+
+struct Coord {
 	int x;
 	int y;
 };
@@ -26,13 +29,13 @@ class Grid {
 		Grid(int w) : width(w), height(w) { createGrid(w, w); }
 		Grid(int w, int h) : width(w), height(h) { createGrid(w, h); }
 		void createGrid(int w, int h) { vector<Object*> grid(w * h); }
-		Object* getTile(coord xy);
-		void setTile(coord xy, Object* object);
+		Object* getTile(Coord xy);
+		void setTile(Coord xy, Object* object);
 		int getHeight() { return height; }
 		int getWidth() { return width; }
 		int getSize() { return grid.size(); }
 	private:
-		int coordToInt(coord c) { return (((height - 1 - c.y) * width) + c.x); }
+		int coordToInt(Coord c) { return (((height - 1 - c.y) * width) + c.x); }
 		vector<Object*> grid;
 		int height;
 		int width;
@@ -40,6 +43,31 @@ class Grid {
 
 class Object {
 	public:
+		virtual void move() = 0;
+		virtual Obj whatAmI() = 0;
+	private:
+		Coord location;
+};
+
+class Empty : Object {
+	public:
+		void move() {}
+		Obj whatAmI() { return EMPTY; }
+	private:
+};
+
+class Snake : Object {
+	public:
+		void move();
+		Obj whatAmI() { return SNAKE; }
+	private:
+		vector<Coord> body;
+};
+
+class Fruit : Object {
+	public:
+		void move();
+		Obj whatAmI() { return FRUIT; }
 	private:
 };
 
