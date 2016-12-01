@@ -12,9 +12,9 @@ const int GRID_WIDTH = 20;
 const int GRID_HEIGHT = 20;
 const int SCREEN_WIDTH = 900;
 const int SCREEN_HEIGHT = 900;
-const int NUMBER_OF_SNAKES = 1;
-const sf::Color colorOne(0, 25, 51);
-const sf::Color colorTwo(32, 32, 32);
+const int NUMBER_OF_SNAKES = 2;
+const sf::Color COLOR_ONE(0, 25, 51);
+const sf::Color COLOR_TWO(32, 32, 32);
 
 enum Obj { EMPTY, FRUIT, SNAKE };
 enum Direction { UP, DOWN, LEFT, RIGHT };
@@ -24,14 +24,23 @@ struct Coord {
 	int y;
 };
 
+class Grid;
 class Object;
+class Snake;
+class Fruit;
+
+void render(sf::RenderWindow& window, Grid world);
+void drawGrid(sf::RenderWindow& window, Grid world);
+int coordToIndex(Coord c);
+Coord indexToPixel(int i);
+Coord indexToCoord(int i);
 
 class Grid {
 	public:
-		Grid() : width(10), height(10) { createGrid(10, 10); }
-		Grid(int w) : width(w), height(w) { createGrid(w, w); }
-		Grid(int w, int h) : width(w), height(h) { createGrid(w, h); }
-		void createGrid(int w, int h) { vector<Object*> grid(w * h); }
+		Grid() { createGrid(10, 10); }
+		Grid(int w) { createGrid(w, w); }
+		Grid(int w, int h) { createGrid(w, h); }
+		void createGrid(int w, int h);
 		Object* getObject(int i);
 		void setObject(int index, Object* object);
 		int getHeight() { return height; }
@@ -49,19 +58,24 @@ class Grid {
 
 class Object {
 	public:
+		Object(int index) : location(indexToCoord(index)) { cout << "Object created" << endl; }
 		virtual void move() = 0;
 		virtual void draw(sf::RenderWindow& window, int index) = 0;
 		virtual Obj whatAmI() = 0;
+		void setLocation(Coord c) { location = c; }
 	private:
 		Coord location;
 };
 
 class Empty : public Object {
 	public:
+		Empty(int index) : Object(index), colorOne(COLOR_ONE), colorTwo(COLOR_TWO) { cout << "Empty created" << endl;}
 		void move() { return; }
 		void draw(sf::RenderWindow& window, int index);
 		Obj whatAmI() { return EMPTY; }
 	private:
+		sf::Color colorOne;
+		sf::Color colorTwo;
 };
 
 class Snake : public Object {
@@ -81,12 +95,6 @@ class Fruit : public Object {
 	private:
 };
 
-void render(sf::RenderWindow& window, Grid world);
-void populateGrid(Grid& world);
-void drawGrid(sf::RenderWindow& window, Grid world);
-int coordToIndex(Coord c);
-Coord indexToPixel(int i);
-
 int main() {
 	
 	sf::RenderWindow window(sf::VideoMode(SCREEN_WIDTH, SCREEN_HEIGHT), "Matt DiBello's Snake Game", 
@@ -101,7 +109,7 @@ int main() {
 	window.display();
 	
 	Grid world(GRID_WIDTH, GRID_HEIGHT);
-	populateGrid(world);
+	//populateGrid(world);
 
 	while (window.isOpen()) {
 		sf::Event event;
@@ -121,6 +129,7 @@ int main() {
 					// resume?
 					break;
 				case sf::Event::KeyPressed:
+					cout << "Keypress" << endl;
 					render(window, world);
 					break;
 				default:
@@ -135,19 +144,22 @@ int main() {
 }
 
 void render(sf::RenderWindow& window, Grid world) {
-	//drawGrid(window, world);
-	for (int i = 0; i < world.getNumModified(); i++) {
-		world.getObject(world.getFromModified(i))->draw(window, i);
+	for (int i = 0; i < world.getSize(); i++) {
+		world.getObject(i)->draw(window, i);
 	}
 	window.display();
 }
 
 void populateGrid(Grid& world) {
 	for (int i = 0; i < world.getSize(); i++) {
-		Empty* e = new Empty();
+		Empty* e = new Empty(i);
 		world.setObject(i, e);
 		world.addToModified(i);
 	}
+}
+
+int coordToIndex(Coord c) { 
+	return (((GRID_WIDTH - 1 - c.y) * GRID_WIDTH) + c.x); 
 }
 
 Coord indexToPixel(int i) { 
@@ -155,8 +167,21 @@ Coord indexToPixel(int i) {
 	return c;
 }
 
-int coordToIndex(Coord c) { 
-	return (((GRID_WIDTH - 1 - c.y) * GRID_WIDTH) + c.x); 
+Coord indexToCoord(int i) {
+	Coord c = {(i % GRID_WIDTH), (i / GRID_WIDTH)};
+	return c;
+}
+
+void Grid::createGrid(int w, int h) {
+	Grid::width = w;
+	Grid::height = h;
+	cout << "Grid creating..." << endl;
+	for (int i = 0; i < (Grid::width * Grid::height); i++) {
+		cout << i << endl;
+		Object* o = new Empty(i);
+		Grid::grid.push_back(o);
+	}
+	cout << "Grid created" << endl;
 }
 
 void Grid::setObject(int index, Object* o) {
@@ -195,10 +220,10 @@ void drawGrid(sf::RenderWindow& window, Grid world) {
 			sf::RectangleShape rectangle(sf::Vector2f(tile_width, tile_height));
 			rectangle.setPosition(tile_width * j, tile_height * i);
 			if ((i + j) % 2 == 0) {
-				rectangle.setFillColor(colorTwo);
+				rectangle.setFillColor(COLOR_TWO);
 			}
 			else {
-				rectangle.setFillColor(colorOne);
+				rectangle.setFillColor(COLOR_ONE);
 			}
 			window.draw(rectangle);
 		}
