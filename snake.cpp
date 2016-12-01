@@ -12,6 +12,9 @@ const int GRID_WIDTH = 20;
 const int GRID_HEIGHT = 20;
 const int SCREEN_WIDTH = 900;
 const int SCREEN_HEIGHT = 900;
+const int NUMBER_OF_SNAKES = 1;
+const sf::Color colorOne(0, 25, 51);
+const sf::Color colorTwo(32, 32, 32);
 
 enum Obj { EMPTY, FRUIT, SNAKE };
 enum Direction { UP, DOWN, LEFT, RIGHT };
@@ -29,14 +32,17 @@ class Grid {
 		Grid(int w) : width(w), height(w) { createGrid(w, w); }
 		Grid(int w, int h) : width(w), height(h) { createGrid(w, h); }
 		void createGrid(int w, int h) { vector<Object*> grid(w * h); }
-		Object* getTile(Coord xy);
-		void setTile(Coord xy, Object* object);
+		Object* getObject(int i);
+		void setObject(int index, Object* object);
 		int getHeight() { return height; }
 		int getWidth() { return width; }
 		int getSize() { return grid.size(); }
+		void addToModified(int index) { modified.push_back(1); }
+		int getFromModified(int index) { return modified[index]; }
+		int getNumModified() { return modified.size(); }
 	private:
-		int coordToInt(Coord c) { return (((height - 1 - c.y) * width) + c.x); }
 		vector<Object*> grid;
+		vector<int> modified;
 		int height;
 		int width;
 };
@@ -44,35 +50,42 @@ class Grid {
 class Object {
 	public:
 		virtual void move() = 0;
+		virtual void draw(sf::RenderWindow& window, int index) = 0;
 		virtual Obj whatAmI() = 0;
 	private:
 		Coord location;
 };
 
-class Empty : Object {
+class Empty : public Object {
 	public:
-		void move() {}
+		void move() { return; }
+		void draw(sf::RenderWindow& window, int index);
 		Obj whatAmI() { return EMPTY; }
 	private:
 };
 
-class Snake : Object {
+class Snake : public Object {
 	public:
 		void move();
+		void draw(int index);
 		Obj whatAmI() { return SNAKE; }
 	private:
 		vector<Coord> body;
 };
 
-class Fruit : Object {
+class Fruit : public Object {
 	public:
 		void move();
+		void draw(int index);
 		Obj whatAmI() { return FRUIT; }
 	private:
 };
 
 void render(sf::RenderWindow& window, Grid world);
+void populateGrid(Grid& world);
 void drawGrid(sf::RenderWindow& window, Grid world);
+int coordToIndex(Coord c);
+Coord indexToPixel(int i);
 
 int main() {
 	
@@ -88,6 +101,7 @@ int main() {
 	window.display();
 	
 	Grid world(GRID_WIDTH, GRID_HEIGHT);
+	populateGrid(world);
 
 	while (window.isOpen()) {
 		sf::Event event;
@@ -121,14 +135,59 @@ int main() {
 }
 
 void render(sf::RenderWindow& window, Grid world) {
-	window.clear(sf::Color::Black);
-	drawGrid(window, world);
+	//drawGrid(window, world);
+	for (int i = 0; i < world.getNumModified(); i++) {
+		world.getObject(world.getFromModified(i))->draw(window, i);
+	}
 	window.display();
 }
 
+void populateGrid(Grid& world) {
+	for (int i = 0; i < world.getSize(); i++) {
+		Empty* e = new Empty();
+		world.setObject(i, e);
+		world.addToModified(i);
+	}
+}
+
+Coord indexToPixel(int i) { 
+	Coord c = {(i % GRID_WIDTH) * (SCREEN_WIDTH / GRID_WIDTH), (i / GRID_WIDTH) * (SCREEN_HEIGHT / GRID_HEIGHT)};
+	return c;
+}
+
+int coordToIndex(Coord c) { 
+	return (((GRID_WIDTH - 1 - c.y) * GRID_WIDTH) + c.x); 
+}
+
+void Grid::setObject(int index, Object* o) {
+	this->grid[index] = o;
+}
+
+Object* Grid::getObject(int index) {
+	return this->grid[index];
+}
+
+void Empty::draw(sf::RenderWindow& window, int index) {
+	sf::Color color = colorOne;
+	Coord c = indexToPixel(index);
+	if (GRID_WIDTH % 2 == 0) {
+		if (((index / GRID_WIDTH) + (index % GRID_WIDTH)) % 2 == 0) {
+			color = colorTwo;
+		}
+	}
+	else {
+		if (index % 2 == 0) {
+			color = colorTwo;
+		}
+	}
+	sf::RectangleShape rectangle(sf::Vector2f(SCREEN_WIDTH / GRID_WIDTH, SCREEN_HEIGHT / GRID_HEIGHT));
+	rectangle.setPosition(c.x,c.y);
+	rectangle.setFillColor(color);
+	window.draw(rectangle);
+	
+}
+
 void drawGrid(sf::RenderWindow& window, Grid world) {
-	sf::Color colorOne(0, 25, 51);
-	sf::Color colorTwo(32, 32, 32);
 	float tile_height = SCREEN_HEIGHT / GRID_HEIGHT;
 	float tile_width = SCREEN_WIDTH / GRID_WIDTH;
 	for (int i = 0; i < world.getHeight(); i++) {
