@@ -19,6 +19,7 @@ const sf::Color COLOR_TWO(32, 32, 32);
 
 enum Obj { EMPTY, FRUIT, SNAKE };
 enum Direction { UP, DOWN, LEFT, RIGHT };
+enum Result { SUCCESS, PLAYER_ONE_LOSES, PLAYER_TWO_LOSES, PLAYER_THREE_LOSES, PLAYER_FOUR_LOSES, FAILURE };
 
 struct Coord {
 	int x;
@@ -31,12 +32,12 @@ class Snake;
 class Fruit;
 
 void render(sf::RenderWindow& window, Grid world);
-void drawGrid(sf::RenderWindow& window, Grid world);
 void takeTurn(Grid world);
 void timeThread(pair<sf::RenderWindow&, Grid> p);
 int coordToIndex(Coord c);
 Coord indexToPixel(int i);
 Coord indexToCoord(int i);
+bool locationIsInvalid(Coord c);
 
 class Grid {
 	public:
@@ -46,6 +47,7 @@ class Grid {
 		void createGrid(int w, int h);
 		Object* getObject(int index) { return grid[index]; }
 		void setObject(int index, Object* object) { grid[index] = object; }
+		void swapObjects(int indexOne, int indexTwo);
 		int getHeight() { return height; }
 		int getWidth() { return width; }
 		int getSize() { return grid.size(); }
@@ -62,10 +64,11 @@ class Grid {
 class Object {
 	public:
 		Object(int index) : location(indexToCoord(index)) { cout << "Object created" << endl; }
-		virtual void move() = 0;
+		virtual Result move(Grid world) = 0;
 		virtual void draw(sf::RenderWindow& window, int index) = 0;
 		virtual Obj whatAmI() = 0;
 		void setLocation(Coord c) { location = c; }
+		Coord getLocation() { return location; }
 	private:
 		Coord location;
 };
@@ -73,7 +76,7 @@ class Object {
 class Empty : public Object {
 	public:
 		Empty(int index) : Object(index), colorOne(COLOR_ONE), colorTwo(COLOR_TWO) { cout << "Empty created" << endl;}
-		void move() { return; }
+		Result move(Grid world) { return FAILURE; }
 		void draw(sf::RenderWindow& window, int index);
 		Obj whatAmI() { return EMPTY; }
 	private:
@@ -84,7 +87,7 @@ class Empty : public Object {
 class Snake : public Object {
 	public:
 		Snake(Coord c, int playerNumber);
-		void move() { return; }
+		Result move(Grid world);
 		void draw(sf::RenderWindow& window, int index);
 		Obj whatAmI() { return SNAKE; }
 	private:
@@ -96,7 +99,7 @@ class Snake : public Object {
 
 class Fruit : public Object {
 	public:
-		void move();
+		Result move(Grid world);
 		void draw(int index);
 		Obj whatAmI() { return FRUIT; }
 	private:
@@ -116,7 +119,6 @@ int main() {
 	window.display();
 	
 	Grid world(GRID_WIDTH, GRID_HEIGHT);
-	//populateGrid(world);
 
 	window.setActive(false);
 	sf::Thread timingThread(&timeThread, pair<sf::RenderWindow&, Grid>( window, world ));
@@ -154,16 +156,12 @@ int main() {
 void render(sf::RenderWindow& window, Grid world) {
 	for (int i = 0; i < world.getSize(); i++) {
 		world.getObject(i)->draw(window, i);
+		if (world.getObject(i)->whatAmI() == SNAKE) {
+			cout << "Snake: " << i << endl;
+		}
 	}
+	cout << "Rendered world" << endl;
 	window.display();
-}
-
-void populateGrid(Grid& world) {
-	for (int i = 0; i < world.getSize(); i++) {
-		Empty* e = new Empty(i);
-		world.setObject(i, e);
-		world.addToModified(i);
-	}
 }
 
 void timeThread(pair<sf::RenderWindow&, Grid> p) {
@@ -190,7 +188,8 @@ void takeTurn(Grid world) {
 	for (int i = 0; i < world.getSize(); i++) {
 		obj = world.getObject(i);
 		if (obj->whatAmI() == SNAKE) {
-			cout << "SNAKE!!!" << endl;
+			cout << "Move Snake" << endl;
+			obj->move(world);
 		}
 	}
 }
@@ -209,10 +208,17 @@ Coord indexToCoord(int i) {
 	return c;
 }
 
+bool locationIsInvalid(Coord c) {
+	if (c.x < 0 || c.x >= GRID_WIDTH || c.y < 0 || c.y >= GRID_HEIGHT) {
+		return true;
+	}
+	return false;
+}
+
 void Grid::createGrid(int w, int h) {
 	Grid::width = w;
 	Grid::height = h;
-	// initialize word
+	// initialize world
 	for (int i = 0; i < (Grid::width * Grid::height); i++) {
 		cout << i << endl;
 		Object* o = new Empty(i);
@@ -243,6 +249,19 @@ void Grid::createGrid(int w, int h) {
 		Object* temp = getObject(coordToIndex(coord));
 		setObject(coordToIndex(coord), snake);
 	}
+}
+
+void Grid::swapObjects(int indexOne, int indexTwo) {
+	Coord temp_location;
+	Object* temp_object_ptr;
+	// swap pointers
+	temp_object_ptr = Grid::getObject(indexOne);
+	Grid::setObject(indexOne, Grid::getObject(indexTwo));
+	Grid::setObject(indexTwo, temp_object_ptr);
+	// swap locations
+	temp_location = Grid::getObject(indexOne)->getLocation();
+	Grid::getObject(indexOne)->setLocation(Grid::getObject(indexTwo)->getLocation());
+	Grid::getObject(indexTwo)->setLocation(temp_location);
 }
 
 void Empty::draw(sf::RenderWindow& window, int index) {
@@ -294,22 +313,33 @@ void Snake::draw(sf::RenderWindow& window, int index) {
 	rectangle.setPosition(c.x,c.y);
 	rectangle.setFillColor(Snake::color);
 	window.draw(rectangle);
+	// draw body
 }
 
-void drawGrid(sf::RenderWindow& window, Grid world) {
-	float tile_height = SCREEN_HEIGHT / GRID_HEIGHT;
-	float tile_width = SCREEN_WIDTH / GRID_WIDTH;
-	for (int i = 0; i < world.getHeight(); i++) {
-		for (int j = 0; j < world.getWidth(); j++) {
-			sf::RectangleShape rectangle(sf::Vector2f(tile_width, tile_height));
-			rectangle.setPosition(tile_width * j, tile_height * i);
-			if ((i + j) % 2 == 0) {
-				rectangle.setFillColor(COLOR_TWO);
-			}
-			else {
-				rectangle.setFillColor(COLOR_ONE);
-			}
-			window.draw(rectangle);
-		}
+Result Snake::move(Grid world) {
+	Coord new_location = Snake::getLocation();
+	cout << Snake::direction << endl;
+	switch (Snake::direction) {
+		case UP:
+			new_location.y++;
+			break;
+		case DOWN:
+			new_location.y--;
+			break;
+		case LEFT:
+			new_location.x--;
+			break;
+		case RIGHT:
+			new_location.x++;
+			break;
 	}
+	if (locationIsInvalid(new_location)) {
+		cout << "Location is invalid" << endl;
+		return static_cast<Result>(Snake::playerID);
+	}
+	cout << coordToIndex(Snake::getLocation()) << " -> " << coordToIndex(new_location) << endl;
+	world.swapObjects(coordToIndex(Snake::getLocation()), coordToIndex(new_location));
+	Snake::setLocation(new_location);
+	// move body loop
+	return SUCCESS;
 }
