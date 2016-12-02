@@ -10,9 +10,9 @@ using namespace std;
 
 const int GRID_WIDTH = 32;
 const int GRID_HEIGHT = 32;
-const int SCREEN_WIDTH = 900;
-const int SCREEN_HEIGHT = 900;
-const int NUMBER_OF_SNAKES = 4;
+const int SCREEN_WIDTH = 960;
+const int SCREEN_HEIGHT = 960;
+const int NUMBER_OF_SNAKES = 1;
 const sf::Color COLOR_ONE(0, 25, 51);
 const sf::Color COLOR_TWO(32, 32, 32);
 
@@ -31,6 +31,8 @@ class Fruit;
 
 void render(sf::RenderWindow& window, Grid world);
 void drawGrid(sf::RenderWindow& window, Grid world);
+void takeTurn(Grid world);
+void timeThread(sf::RenderWindow&, Grid world);
 int coordToIndex(Coord c);
 Coord indexToPixel(int i);
 Coord indexToCoord(int i);
@@ -88,6 +90,7 @@ class Snake : public Object {
 		vector<Coord> body;
 		int playerID;
 		sf::Color color;
+		Direction direction;
 };
 
 class Fruit : public Object {
@@ -108,16 +111,24 @@ int main() {
 	window.setFramerateLimit(60);
 	window.setKeyRepeatEnabled(false);
 
-	window.clear(sf::Color::Green);
+	window.clear(sf::Color::White);
 	window.display();
 	
 	Grid world(GRID_WIDTH, GRID_HEIGHT);
 	//populateGrid(world);
 
+	// initial turn length is 1 second
+	sf::Time turnLength = sf::milliseconds(1000);
+	sf::Clock clock;
+
+	window.setActive(false);
+	sf::Thread timingThread(&timeThread, window);
+	timingThread.launch();
+	
+
 	while (window.isOpen()) {
 		sf::Event event;
 		while (window.pollEvent(event)) {
-
 			switch (event.type) {
 				case sf::Event::Closed:
 					window.close();
@@ -133,12 +144,15 @@ int main() {
 					break;
 				case sf::Event::KeyPressed:
 					cout << "Keypress" << endl;
-					render(window, world);
 					break;
 				default:
 					break;
 			}
-
+			if (clock.getElapsedTime() >= turnLength) {
+				takeTurn(world);
+				render(window, world);
+				clock.restart();
+			}
 		}
 	}
 
@@ -159,6 +173,14 @@ void populateGrid(Grid& world) {
 		world.setObject(i, e);
 		world.addToModified(i);
 	}
+}
+
+void timingThread(sf::RenderWindow& window) {
+	cout << "Hi" << endl;
+}
+
+void takeTurn(Grid world) {
+	cout << "Took turn." << endl;
 }
 
 int coordToIndex(Coord c) { 
@@ -236,15 +258,19 @@ Snake::Snake(Coord c, int playerNumber) : Object(coordToIndex(c)) {
 	switch (Snake::playerID) {
 		case 0:
 			Snake::color = sf::Color(154, 205, 50); // yellowgreen
+			Snake::direction = DOWN;
 			break;
 		case 1:
 			Snake::color = sf::Color(85, 107, 47); // darkolivegreen
+			Snake::direction = UP;
 			break;
 		case 2:
 			Snake::color = sf::Color(0, 100, 0); // darkgreen
+			Snake::direction = RIGHT;
 			break;
 		case 3:
 			Snake::color = sf::Color(46, 139, 87); // seagreen
+			Snake::direction = LEFT;
 			break;
 	}
 	cout << "Snake created." << endl;
