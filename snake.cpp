@@ -3,6 +3,7 @@
 
 #include <iostream>
 #include <vector>
+#include <utility>
 #include <SFML/Window.hpp>
 #include <SFML/Graphics.hpp>
 
@@ -32,7 +33,7 @@ class Fruit;
 void render(sf::RenderWindow& window, Grid world);
 void drawGrid(sf::RenderWindow& window, Grid world);
 void takeTurn(Grid world);
-void timeThread(sf::RenderWindow&, Grid world);
+void timeThread(pair<sf::RenderWindow&, Grid> p);
 int coordToIndex(Coord c);
 Coord indexToPixel(int i);
 Coord indexToCoord(int i);
@@ -117,14 +118,9 @@ int main() {
 	Grid world(GRID_WIDTH, GRID_HEIGHT);
 	//populateGrid(world);
 
-	// initial turn length is 1 second
-	sf::Time turnLength = sf::milliseconds(1000);
-	sf::Clock clock;
-
 	window.setActive(false);
-	sf::Thread timingThread(&timeThread, window);
+	sf::Thread timingThread(&timeThread, pair<sf::RenderWindow&, Grid>( window, world ));
 	timingThread.launch();
-	
 
 	while (window.isOpen()) {
 		sf::Event event;
@@ -148,11 +144,6 @@ int main() {
 				default:
 					break;
 			}
-			if (clock.getElapsedTime() >= turnLength) {
-				takeTurn(world);
-				render(window, world);
-				clock.restart();
-			}
 		}
 	}
 
@@ -175,12 +166,33 @@ void populateGrid(Grid& world) {
 	}
 }
 
-void timingThread(sf::RenderWindow& window) {
-	cout << "Hi" << endl;
+void timeThread(pair<sf::RenderWindow&, Grid> p) {
+	// initial turn length is 1 second
+	sf::RenderWindow& window = p.first;
+	Grid world = p.second;
+	
+	sf::Time turnLength = sf::milliseconds(1000);
+	sf::Clock clock;
+	
+	while(window.isOpen()) {
+		if (clock.getElapsedTime() >= turnLength) {
+			takeTurn(world);
+			render(window, world);
+			clock.restart();
+		}
+	}
 }
 
 void takeTurn(Grid world) {
-	cout << "Took turn." << endl;
+	// move snakes
+	cout << "Took turn" << endl;
+	Object* obj;
+	for (int i = 0; i < world.getSize(); i++) {
+		obj = world.getObject(i);
+		if (obj->whatAmI() == SNAKE) {
+			cout << "SNAKE!!!" << endl;
+		}
+	}
 }
 
 int coordToIndex(Coord c) { 
