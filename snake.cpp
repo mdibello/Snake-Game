@@ -8,11 +8,11 @@
 
 using namespace std;
 
-const int GRID_WIDTH = 20;
-const int GRID_HEIGHT = 20;
+const int GRID_WIDTH = 32;
+const int GRID_HEIGHT = 32;
 const int SCREEN_WIDTH = 900;
 const int SCREEN_HEIGHT = 900;
-const int NUMBER_OF_SNAKES = 2;
+const int NUMBER_OF_SNAKES = 4;
 const sf::Color COLOR_ONE(0, 25, 51);
 const sf::Color COLOR_TWO(32, 32, 32);
 
@@ -41,8 +41,8 @@ class Grid {
 		Grid(int w) { createGrid(w, w); }
 		Grid(int w, int h) { createGrid(w, h); }
 		void createGrid(int w, int h);
-		Object* getObject(int i);
-		void setObject(int index, Object* object);
+		Object* getObject(int index) { return grid[index]; }
+		void setObject(int index, Object* object) { grid[index] = object; }
 		int getHeight() { return height; }
 		int getWidth() { return width; }
 		int getSize() { return grid.size(); }
@@ -80,11 +80,14 @@ class Empty : public Object {
 
 class Snake : public Object {
 	public:
-		void move();
-		void draw(int index);
+		Snake(Coord c, int playerNumber);
+		void move() { return; }
+		void draw(sf::RenderWindow& window, int index);
 		Obj whatAmI() { return SNAKE; }
 	private:
 		vector<Coord> body;
+		int playerID;
+		sf::Color color;
 };
 
 class Fruit : public Object {
@@ -175,21 +178,37 @@ Coord indexToCoord(int i) {
 void Grid::createGrid(int w, int h) {
 	Grid::width = w;
 	Grid::height = h;
-	cout << "Grid creating..." << endl;
+	// initialize word
 	for (int i = 0; i < (Grid::width * Grid::height); i++) {
 		cout << i << endl;
 		Object* o = new Empty(i);
 		Grid::grid.push_back(o);
 	}
-	cout << "Grid created" << endl;
-}
-
-void Grid::setObject(int index, Object* o) {
-	this->grid[index] = o;
-}
-
-Object* Grid::getObject(int index) {
-	return this->grid[index];
+	// add snakes
+	Coord coord;
+	for (int i = 0; i < NUMBER_OF_SNAKES; i++) {
+		switch (i) {
+			case 0:
+				coord = { GRID_WIDTH / 4, 3 * (GRID_HEIGHT / 4) };
+				break;
+			case 1:
+				coord = { 3 * (GRID_WIDTH / 4), GRID_HEIGHT / 4 };
+				break;
+			case 2:
+				coord = { GRID_WIDTH / 4, GRID_HEIGHT / 4 };
+				break;
+			case 3:
+				coord = { 3 * (GRID_WIDTH / 4), 3 * (GRID_HEIGHT / 4) };
+				break;
+			default:
+				cout << "The desired number of snakes (" << NUMBER_OF_SNAKES << ") is not supported." << endl;
+				cout << "Exiting..." << endl;
+				exit(1);
+		}
+		Object* snake = new Snake(coord, i);
+		Object* temp = getObject(coordToIndex(coord));
+		setObject(coordToIndex(coord), snake);
+	}
 }
 
 void Empty::draw(sf::RenderWindow& window, int index) {
@@ -208,8 +227,35 @@ void Empty::draw(sf::RenderWindow& window, int index) {
 	sf::RectangleShape rectangle(sf::Vector2f(SCREEN_WIDTH / GRID_WIDTH, SCREEN_HEIGHT / GRID_HEIGHT));
 	rectangle.setPosition(c.x,c.y);
 	rectangle.setFillColor(color);
+	window.draw(rectangle);	
+}
+
+Snake::Snake(Coord c, int playerNumber) : Object(coordToIndex(c)) {
+	Snake::playerID = playerNumber;
+	Snake::body;
+	switch (Snake::playerID) {
+		case 0:
+			Snake::color = sf::Color(154, 205, 50); // yellowgreen
+			break;
+		case 1:
+			Snake::color = sf::Color(85, 107, 47); // darkolivegreen
+			break;
+		case 2:
+			Snake::color = sf::Color(0, 100, 0); // darkgreen
+			break;
+		case 3:
+			Snake::color = sf::Color(46, 139, 87); // seagreen
+			break;
+	}
+	cout << "Snake created." << endl;
+}
+
+void Snake::draw(sf::RenderWindow& window, int index) {
+	Coord c = indexToPixel(index);
+	sf::RectangleShape rectangle(sf::Vector2f(SCREEN_WIDTH / GRID_WIDTH, SCREEN_HEIGHT / GRID_HEIGHT));
+	rectangle.setPosition(c.x,c.y);
+	rectangle.setFillColor(Snake::color);
 	window.draw(rectangle);
-	
 }
 
 void drawGrid(sf::RenderWindow& window, Grid world) {
