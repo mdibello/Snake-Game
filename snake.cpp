@@ -55,6 +55,7 @@ class Grid {
 		int getFromModified(int index) { return modified[index]; }
 		int getNumModified() { return modified.size(); }
 		void processKeypress();
+		void resetHasMoved();
 		vector<Object*> snakes;
 	private:
 		vector<Object*> grid;
@@ -94,6 +95,7 @@ class Snake : public Object {
 		void draw(sf::RenderWindow& window, int index);
 		Obj whatAmI() { return SNAKE; }
 		void setDirection(Direction d) { Snake::direction = d; }
+		void resetMoveStatus() { hasMovedYet = false; }
 	private:
 		vector<Coord> body;
 		int playerID;
@@ -239,6 +241,7 @@ void takeTurn(Grid& world) {
 			obj->move(world);
 		}
 	}
+	world.resetHasMoved();
 }
 
 int coordToIndex(Coord c) { 
@@ -314,6 +317,12 @@ void Grid::swapObjects(int indexOne, int indexTwo) {
 	temp_location = Grid::getObject(indexOne)->getLocation();
 	Grid::getObject(indexOne)->setLocation(Grid::getObject(indexTwo)->getLocation());
 	Grid::getObject(indexTwo)->setLocation(temp_location);
+}
+
+void Grid::resetHasMoved() {
+	for (auto i = Grid::snakes.begin(); i != Grid::snakes.end(); i++) {
+		(static_cast<Snake*>(*i))->resetMoveStatus();
+	}
 }
 
 void Empty::draw(sf::RenderWindow& window, int index) {
@@ -397,7 +406,7 @@ Result Snake::move(Grid& world) {
 	}
 	// cout << coordToIndex(Snake::getLocation()) << " -> " << coordToIndex(new_location) << endl;
 	world.swapObjects(coordToIndex(Snake::getLocation()), coordToIndex(new_location));
-	//Snake::setLocation(new_location);
+	// Snake::setLocation(new_location);
 	// move body loop
 	return SUCCESS;
 }
