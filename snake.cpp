@@ -5,6 +5,7 @@
 #include <vector>
 #include <utility>
 #include <random>
+#include <cmath>
 #include <SFML/Window.hpp>
 #include <SFML/Graphics.hpp>
 
@@ -80,6 +81,7 @@ class Grid {
 		void addFruitToVector(Object* fruit) { fruits.push_back(fruit); }
 		void addSnakeBodies();
 		void replenishFruit();
+		void addFruit();
 	private:
 		vector<Object*> grid;
 		vector<int> modified;
@@ -347,16 +349,8 @@ void Grid::createGrid(int w, int h) {
 		snakes.push_back(snake);
 	}
 	// add fruit
-	int fruit_index;
 	for (int i = 0; i < MAX_FRUIT; i++) {
-		do {
-			fruit_index = rand() % (GRID_WIDTH * GRID_HEIGHT);
-		} while ( Grid::getObject(fruit_index)->whatAmI() != EMPTY );
-		Object* fruit = new Fruit(indexToCoord(fruit_index));
-		Object* temp = getObject(fruit_index);
-		delete temp;
-		setObject(fruit_index, fruit);
-		fruits.push_back(fruit);
+		addFruit();
 	}
 }
 
@@ -393,6 +387,24 @@ void Grid::addSnakeBodies() {
 			Grid::setObject(coordToIndex(*j), bodySegment);
 		}
 	}
+}
+
+void Grid::replenishFruit() {
+	if (rand() % static_cast<int>((1.0 / pow(0.5, static_cast<double>(fruits.size())))) == 0) {
+		addFruit();
+	}
+}
+
+void Grid::addFruit() {
+	int fruit_index;
+	do {
+		fruit_index = rand() % (GRID_WIDTH * GRID_HEIGHT);
+	} while ( Grid::getObject(fruit_index)->whatAmI() != EMPTY );
+	Object* fruit = new Fruit(indexToCoord(fruit_index));
+	Object* temp = getObject(fruit_index);
+	delete temp;
+	setObject(fruit_index, fruit);
+	fruits.push_back(fruit);
 }
 
 void Empty::draw(sf::RenderWindow& window, int index) {
