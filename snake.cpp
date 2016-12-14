@@ -17,6 +17,8 @@ const int SCREEN_WIDTH = 680;
 const int SCREEN_HEIGHT = 680;
 const int NUMBER_OF_SNAKES = 1;
 const int MAX_FRUIT = 6;
+const float INITIAL_SPEED = 0.1;
+const float SPEED_INCREASE_RATE = 0.98;
 const sf::Color COLOR_ONE(0, 25, 51);
 const sf::Color COLOR_TWO(32, 32, 32);
 
@@ -82,6 +84,8 @@ class Grid {
 		void addSnakeBodies();
 		void replenishFruit();
 		void addFruit();
+		float getSpeed() { return speed; }
+		void setSpeed(float s) { speed = s; }
 	private:
 		vector<Object*> grid;
 		vector<int> modified;
@@ -89,6 +93,7 @@ class Grid {
 		vector<Object*> fruits;
 		int height;
 		int width;
+		float speed;
 };
 
 class Empty : public Object {
@@ -250,11 +255,12 @@ void timeThread(pair<sf::RenderWindow&, Grid&> p) {
 	sf::RenderWindow& window = p.first;
 	Grid world = p.second;
 	
-	sf::Time turnLength = sf::milliseconds(100);
+	sf::Time turnLength = sf::seconds(world.getSpeed());
 	sf::Clock clock;
 	
 	while(window.isOpen()) {
 		if (clock.getElapsedTime() >= turnLength) {
+			turnLength = sf::seconds(world.getSpeed());
 			takeTurn(world);
 			render(window, world);
 			clock.restart();
@@ -314,6 +320,7 @@ bool locationIsInvalid(Coord c) {
 void Grid::createGrid(int w, int h) {
 	Grid::width = w;
 	Grid::height = h;
+	Grid::speed = INITIAL_SPEED;
 	// initialize world
 	for (int i = 0; i < (Grid::width * Grid::height); i++) {
 		//cout << i << endl;
@@ -390,7 +397,7 @@ void Grid::addSnakeBodies() {
 }
 
 void Grid::replenishFruit() {
-	if (rand() % static_cast<int>((1.0 / pow(0.5, static_cast<double>(fruits.size())))) == 0) {
+	if (fruits.size() < MAX_FRUIT && rand() % static_cast<int>((1.0 / pow(0.5, fruits.size()))) == 0) {
 		addFruit();
 	}
 }
@@ -492,7 +499,9 @@ Result Snake::move(Grid& world) {
 		Object* empty = new Empty(coordToIndex(new_location));
 		Object* temp = world.getObject(coordToIndex(new_location));
 		delete temp;
-		world.setObject(coordToIndex(new_location), empty);		
+		world.setObject(coordToIndex(new_location), empty);
+		// speed up game
+		world.setSpeed(world.getSpeed() * SPEED_INCREASE_RATE);
 	}
 	else if (Snake::body.size() > 0) { // If no fruit is comsumed, adjust body
 		Snake::body.erase(body.begin());
@@ -504,8 +513,6 @@ Result Snake::move(Grid& world) {
 	return SUCCESS;
 }
 
-void drawBody(Grid& world) {}
-
 void Fruit::draw(sf::RenderWindow& window, int index) {
 	Coord c = indexToPixel(index);
 	sf::RectangleShape rectangle(sf::Vector2f(SCREEN_WIDTH / GRID_WIDTH, SCREEN_HEIGHT / GRID_HEIGHT));
@@ -513,4 +520,3 @@ void Fruit::draw(sf::RenderWindow& window, int index) {
 	rectangle.setFillColor(Fruit::color);
 	window.draw(rectangle);
 }
-
