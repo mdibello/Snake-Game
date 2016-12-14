@@ -39,6 +39,19 @@ Coord indexToPixel(int i);
 Coord indexToCoord(int i);
 bool locationIsInvalid(Coord c);
 
+class Object {
+	public:
+		Object(int index) : location(indexToCoord(index)) {}// cout << "Object created " << index  << endl; }
+		virtual Result move(Grid& world) = 0;
+		virtual void draw(sf::RenderWindow& window, int index) = 0;
+		virtual Obj whatAmI() = 0;
+		void setLocation(Coord c) { location = c; }
+		Coord getLocation() { return location; }
+		virtual void setDirection(Direction d) { }
+	private:
+		Coord location;
+};
+
 class Grid {
 	public:
 		Grid() { createGrid(10, 10); }
@@ -56,25 +69,15 @@ class Grid {
 		int getNumModified() { return modified.size(); }
 		void processKeypress();
 		void resetHasMoved();
-		vector<Object*> snakes;
+		int getNumberSnakes() { return snakes.size(); }
+		void setSnakeDirection(int snakeNumber, Direction dir) { snakes[snakeNumber]->setDirection(dir); }
 	private:
 		vector<Object*> grid;
 		vector<int> modified;
+		vector<Object*> snakes;
+		vector<Object*> fruits;
 		int height;
 		int width;
-};
-
-class Object {
-	public:
-		Object(int index) : location(indexToCoord(index)) {}// cout << "Object created " << index  << endl; }
-		virtual Result move(Grid& world) = 0;
-		virtual void draw(sf::RenderWindow& window, int index) = 0;
-		virtual Obj whatAmI() = 0;
-		void setLocation(Coord c) { location = c; }
-		Coord getLocation() { return location; }
-		virtual void setDirection(Direction d) { }
-	private:
-		Coord location;
 };
 
 class Empty : public Object {
@@ -151,43 +154,43 @@ int main() {
 					cout << "Keypress" << endl;
 					switch (event.key.code) {
 						case (sf::Keyboard::W) :
-							if (world.snakes.size() >= 1) {
-								world.snakes[0]->setDirection(UP);
+							if (world.getNumberSnakes() >= 1) {
+								world.setSnakeDirection(0, UP);
 							}
 							break;
 						case (sf::Keyboard::A) :
-							if (world.snakes.size() >= 1) {
-								world.snakes[0]->setDirection(LEFT);
+							if (world.getNumberSnakes() >= 1) {
+								world.setSnakeDirection(0, LEFT);
 							}
 							break;
 						case (sf::Keyboard::S) :
-							if (world.snakes.size() >= 1) {
-								world.snakes[0]->setDirection(DOWN);
+							if (world.getNumberSnakes() >= 1) {
+								world.setSnakeDirection(0, DOWN);
 							}
 							break;
 						case (sf::Keyboard::D) :
-							if (world.snakes.size() >= 1) {
-								world.snakes[0]->setDirection(RIGHT);
+							if (world.getNumberSnakes() >= 1) {
+								world.setSnakeDirection(0, RIGHT);
 							}
 							break;
 						case (sf::Keyboard::Up) :
-							if (world.snakes.size() >= 2) {
-								world.snakes[1]->setDirection(UP);
+							if (world.getNumberSnakes() >= 2) {
+								world.setSnakeDirection(1, UP);
 							}
 							break;
 						case (sf::Keyboard::Left) :
-							if (world.snakes.size() >= 2) {
-								world.snakes[1]->setDirection(LEFT);
+							if (world.getNumberSnakes() >= 2) {
+								world.setSnakeDirection(1, LEFT);
 							}
 							break;
 						case (sf::Keyboard::Down) :
-							if (world.snakes.size() >= 2) {
-								world.snakes[1]->setDirection(DOWN);
+							if (world.getNumberSnakes() >= 2) {
+								world.setSnakeDirection(1, DOWN);
 							}
 							break;
 						case (sf::Keyboard::Right) :
-							if (world.snakes.size() >= 2) {
-								world.snakes[1]->setDirection(RIGHT);
+							if (world.getNumberSnakes() >= 2) {
+								world.setSnakeDirection(1, RIGHT);
 							}
 							break;
 					}
