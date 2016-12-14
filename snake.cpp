@@ -14,6 +14,7 @@ const int GRID_HEIGHT = 34;
 const int SCREEN_WIDTH = 680;
 const int SCREEN_HEIGHT = 680;
 const int NUMBER_OF_SNAKES = 1;
+const int MAX_FRUIT = 6;
 const sf::Color COLOR_ONE(0, 25, 51);
 const sf::Color COLOR_TWO(32, 32, 32);
 
@@ -71,6 +72,8 @@ class Grid {
 		void resetHasMoved();
 		int getNumberSnakes() { return snakes.size(); }
 		void setSnakeDirection(int snakeNumber, Direction dir) { snakes[snakeNumber]->setDirection(dir); }
+		void clearFruitsVector() { fruits.clear(); }
+		void addFruitToVector(Object* fruit) { fruits.push_back(fruit); }
 	private:
 		vector<Object*> grid;
 		vector<int> modified;
@@ -109,10 +112,12 @@ class Snake : public Object {
 
 class Fruit : public Object {
 	public:
-		Result move(Grid& world);
-		void draw(int index);
+		Fruit(Coord c) : Object(coordToIndex(c)), color(sf::Color::Red) {};
+		Result move(Grid& world) {}
+		void draw(sf::RenderWindow& window, int index);
 		Obj whatAmI() { return FRUIT; }
 	private:
+		sf::Color color;
 };
 
 int main() {
@@ -234,14 +239,20 @@ void timeThread(pair<sf::RenderWindow&, Grid&> p) {
 }
 
 void takeTurn(Grid& world) {
-	// move snakes
 	// cout << "Took turn" << endl;
 	Object* obj;
+	world.clearFruitsVector();
+	Obj objectType;
 	for (int i = 0; i < world.getSize(); i++) {
 		obj = world.getObject(i);
-		if (obj->whatAmI() == SNAKE) {
-			// cout << "Move Snake" << endl;
-			obj->move(world);
+		objectType = obj->whatAmI();
+		switch (objectType) {
+			case SNAKE :
+				obj->move(world);
+				break;
+			case FRUIT :
+				world.addFruitToVector(obj);
+				break;
 		}
 	}
 	world.resetHasMoved();
@@ -304,6 +315,18 @@ void Grid::createGrid(int w, int h) {
 		// cout << "SNAKE INDEX: " << coordToIndex(coord) << endl;
 		setObject(coordToIndex(coord), snake);
 		snakes.push_back(snake);
+	}
+	// add fruit
+	int fruit_index;
+	for (int i = 0; i < MAX_FRUIT; i++) {
+		do {
+			fruit_index = rand() % (GRID_WIDTH * GRID_HEIGHT);
+		} while ( Grid::getObject(fruit_index)->whatAmI() != EMPTY );
+		Object* fruit = new Fruit(indexToCoord(fruit_index));
+		Object* temp = getObject(fruit_index);
+		delete temp;
+		setObject(fruit_index, fruit);
+		fruits.push_back(fruit);
 	}
 }
 
@@ -407,9 +430,29 @@ Result Snake::move(Grid& world) {
 		// cout << "Location is invalid" << endl;
 		return static_cast<Result>(Snake::playerID);
 	}
+	// If snake consumes fruit:
+	if (world.getObject(coordToIndex(new_location))->whatAmI() == FRUIT) {
+		Snake::body.push_back(Snake::getLocation());
+		Object* empty = new Empty(coordToIndex(new_location));
+		Object* temp = world.getObject(coordToIndex(new_location));
+		delete temp;
+		world.setObject(coordToIndex(new_location), empty);		
+	}
+	else if (Snake::body.size() > 0) { // If no fruit is comsumed, adjust body
+		Snake::body.erase(body.begin());
+		Snake::body.push_back(Snake::getLocation());
+	}
 	// cout << coordToIndex(Snake::getLocation()) << " -> " << coordToIndex(new_location) << endl;
 	world.swapObjects(coordToIndex(Snake::getLocation()), coordToIndex(new_location));
-	// Snake::setLocation(new_location);
 	// move body loop
 	return SUCCESS;
 }
+
+void Fruit::draw(sf::RenderWindow& window, int index) {
+	Coord c = indexToPixel(index);
+	sf::RectangleShape rectangle(sf::Vector2f(SCREEN_WIDTH / GRID_WIDTH, SCREEN_HEIGHT / GRID_HEIGHT));
+	rectangle.setPosition(c.x,c.y);
+	rectangle.setFillColor(Fruit::color);
+	window.draw(rectangle);
+}
+
