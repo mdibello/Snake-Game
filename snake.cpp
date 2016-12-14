@@ -4,6 +4,7 @@
 #include <iostream>
 #include <vector>
 #include <utility>
+#include <random>
 #include <SFML/Window.hpp>
 #include <SFML/Graphics.hpp>
 
@@ -18,7 +19,7 @@ const int MAX_FRUIT = 6;
 const sf::Color COLOR_ONE(0, 25, 51);
 const sf::Color COLOR_TWO(32, 32, 32);
 
-enum Obj { EMPTY, FRUIT, SNAKE };
+enum Obj { EMPTY, FRUIT, SNAKE, SNAKE_BODY };
 enum Direction { UP, DOWN, LEFT, RIGHT };
 enum Result { SUCCESS, PLAYER_ONE_LOSES, PLAYER_TWO_LOSES, PLAYER_THREE_LOSES, PLAYER_FOUR_LOSES, FAILURE };
 
@@ -48,7 +49,8 @@ class Object {
 		virtual Obj whatAmI() = 0;
 		void setLocation(Coord c) { location = c; }
 		Coord getLocation() { return location; }
-		virtual void setDirection(Direction d) { }
+		virtual void setDirection(Direction d) {}
+		virtual Direction getDirection() {}
 	private:
 		Coord location;
 };
@@ -71,9 +73,13 @@ class Grid {
 		void processKeypress();
 		void resetHasMoved();
 		int getNumberSnakes() { return snakes.size(); }
+		Object* getSnakeAt(int index) { snakes[index]; }
 		void setSnakeDirection(int snakeNumber, Direction dir) { snakes[snakeNumber]->setDirection(dir); }
+		Direction getSnakeDirection(int snakeNumber) { return snakes[snakeNumber]->getDirection(); }
 		void clearFruitsVector() { fruits.clear(); }
 		void addFruitToVector(Object* fruit) { fruits.push_back(fruit); }
+		void addSnakeBodies();
+		void replenishFruit();
 	private:
 		vector<Object*> grid;
 		vector<int> modified;
@@ -85,7 +91,7 @@ class Grid {
 
 class Empty : public Object {
 	public:
-		Empty(int index) : Object(index), colorOne(COLOR_ONE), colorTwo(COLOR_TWO) {} // cout << "Empty created" << endl;}
+		Empty(int index) : Object(index), colorOne(COLOR_ONE), colorTwo(COLOR_TWO) {}
 		Result move(Grid& world) { return FAILURE; }
 		void draw(sf::RenderWindow& window, int index);
 		Obj whatAmI() { return EMPTY; }
@@ -101,13 +107,26 @@ class Snake : public Object {
 		void draw(sf::RenderWindow& window, int index);
 		Obj whatAmI() { return SNAKE; }
 		void setDirection(Direction d) { Snake::direction = d; }
+		Direction getDirection() { return direction; }
 		void resetMoveStatus() { hasMovedYet = false; }
+		sf::Color getColor() { return color; }
+		vector<Coord> getBodyVector() { return body; }
 	private:
 		vector<Coord> body;
 		int playerID;
 		sf::Color color;
 		Direction direction;
 		bool hasMovedYet;
+};
+
+class SnakeBody : public Object {
+	public:
+		SnakeBody(int index, sf::Color c) : Object(index) { color = c; }
+		Result move(Grid& world) { return FAILURE; }
+		void draw(sf::RenderWindow& window, int index) {}
+		Obj whatAmI() { return SNAKE_BODY; }
+	private:
+		sf::Color color;
 };
 
 class Fruit : public Object {
@@ -129,6 +148,8 @@ int main() {
 	// limit refresh rate to 60 fps
 	window.setFramerateLimit(60);
 	window.setKeyRepeatEnabled(false);
+
+	srand(time(0));
 
 	window.clear(sf::Color::White);
 	window.display();
@@ -159,42 +180,42 @@ int main() {
 					cout << "Keypress" << endl;
 					switch (event.key.code) {
 						case (sf::Keyboard::W) :
-							if (world.getNumberSnakes() >= 1) {
+							if (world.getNumberSnakes() >= 1 && world.getSnakeDirection(0) != DOWN) {
 								world.setSnakeDirection(0, UP);
 							}
 							break;
 						case (sf::Keyboard::A) :
-							if (world.getNumberSnakes() >= 1) {
+							if (world.getNumberSnakes() >= 1 && world.getSnakeDirection(0) != RIGHT) {
 								world.setSnakeDirection(0, LEFT);
 							}
 							break;
 						case (sf::Keyboard::S) :
-							if (world.getNumberSnakes() >= 1) {
+							if (world.getNumberSnakes() >= 1 && world.getSnakeDirection(0) != UP) {
 								world.setSnakeDirection(0, DOWN);
 							}
 							break;
 						case (sf::Keyboard::D) :
-							if (world.getNumberSnakes() >= 1) {
+							if (world.getNumberSnakes() >= 1 && world.getSnakeDirection(0) != LEFT) {
 								world.setSnakeDirection(0, RIGHT);
 							}
 							break;
 						case (sf::Keyboard::Up) :
-							if (world.getNumberSnakes() >= 2) {
+							if (world.getNumberSnakes() >= 2 && world.getSnakeDirection(1) != UP) {
 								world.setSnakeDirection(1, UP);
 							}
 							break;
 						case (sf::Keyboard::Left) :
-							if (world.getNumberSnakes() >= 2) {
+							if (world.getNumberSnakes() >= 2 && world.getSnakeDirection(1) != RIGHT) {
 								world.setSnakeDirection(1, LEFT);
 							}
 							break;
 						case (sf::Keyboard::Down) :
-							if (world.getNumberSnakes() >= 2) {
+							if (world.getNumberSnakes() >= 2 && world.getSnakeDirection(1) != UP) {
 								world.setSnakeDirection(1, DOWN);
 							}
 							break;
 						case (sf::Keyboard::Right) :
-							if (world.getNumberSnakes() >= 2) {
+							if (world.getNumberSnakes() >= 2 && world.getSnakeDirection(1) != LEFT) {
 								world.setSnakeDirection(1, RIGHT);
 							}
 							break;
@@ -211,10 +232,11 @@ int main() {
 }
 
 void render(sf::RenderWindow& window, Grid& world) {
+	Object* obj;
 	for (int i = 0; i < world.getSize(); i++) {
-		world.getObject(i)->draw(window, i);
-		if (world.getObject(i)->whatAmI() == SNAKE) {
-			// cout << "Snake: " << i << " " << coordToIndex(world.getObject(i)->getLocation()) << endl;
+		obj = world.getObject(i);
+		obj->draw(window, i);
+		if (obj->whatAmI() == SNAKE) {
 		}
 	}
 	cout << "Rendered world" << endl;
@@ -253,8 +275,16 @@ void takeTurn(Grid& world) {
 			case FRUIT :
 				world.addFruitToVector(obj);
 				break;
+			case SNAKE_BODY :
+				Object* empty = new Empty(coordToIndex(obj->getLocation()));
+				Object* temp = world.getObject(coordToIndex(obj->getLocation()));
+				delete temp;
+				world.setObject(coordToIndex(obj->getLocation()), empty);
+				break;
 		}
 	}
+	world.addSnakeBodies();
+	world.replenishFruit();
 	world.resetHasMoved();
 }
 
@@ -348,6 +378,20 @@ void Grid::swapObjects(int indexOne, int indexTwo) {
 void Grid::resetHasMoved() {
 	for (auto i = Grid::snakes.begin(); i != Grid::snakes.end(); i++) {
 		(static_cast<Snake*>(*i))->resetMoveStatus();
+	}
+}
+
+void Grid::addSnakeBodies() {
+	for (auto i = snakes.begin(); i != snakes.end(); i++) {
+		Snake* snake = static_cast<Snake*>(*i);
+		vector<Coord> body = snake->getBodyVector();
+		sf::Color color = snake->getColor();
+		for (auto j = body.begin(); j != body.end(); j++) {
+			Object* bodySegment = new SnakeBody(coordToIndex(*j), color);
+			Object* temp = Grid::getObject(coordToIndex(*j));
+			delete temp;
+			Grid::setObject(coordToIndex(*j), bodySegment);
+		}
 	}
 }
 
@@ -447,6 +491,8 @@ Result Snake::move(Grid& world) {
 	// move body loop
 	return SUCCESS;
 }
+
+void drawBody(Grid& world) {}
 
 void Fruit::draw(sf::RenderWindow& window, int index) {
 	Coord c = indexToPixel(index);
