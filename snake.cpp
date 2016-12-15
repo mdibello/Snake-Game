@@ -186,42 +186,50 @@ int main() {
 				case sf::Event::KeyPressed:
 					switch (event.key.code) {
 						case (sf::Keyboard::W) :
-							if (world.getNumberSnakes() >= 1 && world.getSnakeDirection(0) != DOWN) {
+							if (world.getNumberSnakes() >= 1 && world.getSnakeDirection(0) != DOWN
+								&& world.getSnakeDirection(0) != UP) {
 								world.setSnakeDirection(0, UP);
 							}
 							break;
 						case (sf::Keyboard::A) :
-							if (world.getNumberSnakes() >= 1 && world.getSnakeDirection(0) != RIGHT) {
+							if (world.getNumberSnakes() >= 1 && world.getSnakeDirection(0) != RIGHT
+								&& world.getSnakeDirection(0) != LEFT) {
 								world.setSnakeDirection(0, LEFT);
 							}
 							break;
 						case (sf::Keyboard::S) :
-							if (world.getNumberSnakes() >= 1 && world.getSnakeDirection(0) != UP) {
+							if (world.getNumberSnakes() >= 1 && world.getSnakeDirection(0) != UP
+								&& world.getSnakeDirection(0) != DOWN) {
 								world.setSnakeDirection(0, DOWN);
 							}
 							break;
 						case (sf::Keyboard::D) :
-							if (world.getNumberSnakes() >= 1 && world.getSnakeDirection(0) != LEFT) {
+							if (world.getNumberSnakes() >= 1 && world.getSnakeDirection(0) != LEFT
+								&& world.getSnakeDirection(0) != RIGHT) {
 								world.setSnakeDirection(0, RIGHT);
 							}
 							break;
 						case (sf::Keyboard::Up) :
-							if (world.getNumberSnakes() >= 2 && world.getSnakeDirection(1) != DOWN) {
+							if (world.getNumberSnakes() >= 2 && world.getSnakeDirection(1) != DOWN
+								&& world.getSnakeDirection(1) != UP) {
 								world.setSnakeDirection(1, UP);
 							}
 							break;
 						case (sf::Keyboard::Left) :
-							if (world.getNumberSnakes() >= 2 && world.getSnakeDirection(1) != RIGHT) {
+							if (world.getNumberSnakes() >= 2 && world.getSnakeDirection(1) != RIGHT
+								&& world.getSnakeDirection(1) != LEFT) {
 								world.setSnakeDirection(1, LEFT);
 							}
 							break;
 						case (sf::Keyboard::Down) :
-							if (world.getNumberSnakes() >= 2 && world.getSnakeDirection(1) != UP) {
+							if (world.getNumberSnakes() >= 2 && world.getSnakeDirection(1) != UP
+								&& world.getSnakeDirection(1) != DOWN) {
 								world.setSnakeDirection(1, DOWN);
 							}
 							break;
 						case (sf::Keyboard::Right) :
-							if (world.getNumberSnakes() >= 2 && world.getSnakeDirection(1) != LEFT) {
+							if (world.getNumberSnakes() >= 2 && world.getSnakeDirection(1) != LEFT
+								&& world.getSnakeDirection(1) != RIGHT) {
 								world.setSnakeDirection(1, RIGHT);
 							}
 							break;
@@ -489,8 +497,11 @@ Result Snake::move(Grid& world) {
 			new_location.x++;
 			break;
 	}
+	if (locationIsInvalid(new_location))  {
+		return static_cast<Result>(Snake::playerID + 1);
+	}
 	Obj collisionObject = world.getObject(coordToIndex(new_location))->whatAmI();
-	if (locationIsInvalid(new_location) || (collisionObject != FRUIT && collisionObject != EMPTY))  {
+	if (collisionObject != FRUIT && collisionObject != EMPTY)  {
 		return static_cast<Result>(Snake::playerID + 1);
 	}
 	cout << "OK?" << endl;
