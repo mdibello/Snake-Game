@@ -323,10 +323,8 @@ Coord indexToCoord(int i) {
 
 bool locationIsInvalid(Coord c) {
 	if (c.x < 0 || c.x >= GRID_WIDTH || c.y < 0 || c.y >= GRID_HEIGHT) {
-		cout << "Location is Invalid" << endl;
 		return true;
 	}
-	cout << "Location is Valid" << endl;
 	return false;
 }
 
@@ -504,7 +502,6 @@ Result Snake::move(Grid& world) {
 	if (collisionObject != FRUIT && collisionObject != EMPTY)  {
 		return static_cast<Result>(Snake::playerID + 1);
 	}
-	cout << "OK?" << endl;
 	// If snake consumes fruit:
 	if (world.getObject(coordToIndex(new_location))->whatAmI() == FRUIT) {
 		Snake::body.push_back(Snake::getLocation());
