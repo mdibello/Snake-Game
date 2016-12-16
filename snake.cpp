@@ -16,7 +16,7 @@ const int GRID_WIDTH = 34;
 const int GRID_HEIGHT = 34;
 const int SCREEN_WIDTH = 680;
 const int SCREEN_HEIGHT = 680;
-const int NUMBER_OF_SNAKES = 1;
+const int NUMBER_OF_SNAKES = 2;
 const int MAX_FRUIT = 6;
 const float INITIAL_SPEED = 0.1;
 const float SPEED_INCREASE_RATE = 0.98;
@@ -276,7 +276,7 @@ void displayWelcomeScreen(sf::RenderWindow& window) {
 }
 
 bool displayEndingScreen(sf::RenderWindow& window, Grid& world, vector<int> scores) {
-	//usleep(2000000);
+	usleep(2000000);
 	cout << "Help5?" << endl;
 	window.clear(sf::Color::White);
 	cout << "Help6?" << endl;
