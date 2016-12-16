@@ -16,7 +16,7 @@ const int GRID_WIDTH = 34;
 const int GRID_HEIGHT = 34;
 const int SCREEN_WIDTH = 680;
 const int SCREEN_HEIGHT = 680;
-const int NUMBER_OF_SNAKES = 1;
+const int NUMBER_OF_SNAKES = 2;
 const int MAX_FRUIT = 6;
 const float INITIAL_SPEED = 0.1;
 const float SPEED_INCREASE_RATE = 0.98;
@@ -37,6 +37,7 @@ class Object;
 class Snake;
 class Fruit;
 
+void displayWelcomeScreen(sf::RenderWindow& window);
 void render(sf::RenderWindow& window, Grid& world);
 vector<Result> takeTurn(Grid& world);
 void timeThread(pair<sf::RenderWindow&, Grid&> p);
@@ -160,8 +161,17 @@ int main() {
 
 	srand(time(0));
 
-	window.clear(sf::Color::White);
-	window.display();
+	displayWelcomeScreen(window);
+	
+	sf::Event event;
+	do {
+		while (window.pollEvent(event)) {
+			if (event.type == sf::Event::Closed) {
+				window.close();
+				exit(1);
+			}
+		}
+	} while (!sf::Keyboard::isKeyPressed(sf::Keyboard::Space));
 	
 	Grid world(GRID_WIDTH, GRID_HEIGHT);
 
@@ -246,6 +256,59 @@ int main() {
 
 }
 
+void displayWelcomeScreen(sf::RenderWindow& window) {
+	window.clear(sf::Color::White);
+	sf::Font font;
+	if (!font.loadFromFile("SugarpunchDEMO.otf")) {
+	    cout << "Error loading font from file" << endl;
+	}
+	sf::Text welcome;
+	welcome.setFont(font);
+	welcome.setString("Matt DiBello's Snake Game");
+	welcome.setCharacterSize(36);
+	welcome.setFillColor(sf::Color::Red);
+	welcome.setStyle(sf::Text::Bold);
+	sf::FloatRect textRect = welcome.getLocalBounds();
+	welcome.setOrigin(textRect.left + textRect.width/2.0, SCREEN_HEIGHT/3.0);
+	welcome.setPosition(sf::Vector2f(SCREEN_WIDTH/2.0, SCREEN_HEIGHT/2.0));
+	window.draw(welcome);
+	sf::Text instructions;
+	instructions.setFont(font);
+	instructions.setString("Eat the red fruit, avoid collisions");
+	instructions.setCharacterSize(24);
+	instructions.setFillColor(sf::Color::Red);
+	instructions.setStyle(sf::Text::Bold);
+	textRect = instructions.getLocalBounds();
+	instructions.setOrigin(textRect.left + textRect.width/2.0, SCREEN_HEIGHT/4.0);
+	instructions.setPosition(sf::Vector2f(SCREEN_WIDTH/2.0, SCREEN_HEIGHT/2.0));
+	window.draw(instructions);
+	instructions.setString("Player 1\n---\nUP: W\nDOWN: S\nLEFT: A\nRIGHT: D");
+	instructions.setCharacterSize(24);
+	instructions.setFillColor(sf::Color::Red);
+	instructions.setStyle(sf::Text::Bold);
+	textRect = instructions.getLocalBounds();
+	instructions.setOrigin(textRect.left + textRect.width/2.0, SCREEN_HEIGHT/7.0);
+	instructions.setPosition(sf::Vector2f(SCREEN_WIDTH/3.5, SCREEN_HEIGHT/2.0));
+	window.draw(instructions);
+	instructions.setString("Player 2\n---\nUP: UP ARROW\nDOWN: DOWN ARROW\nLEFT: LEFT ARROW\nRIGHT: RIGHT ARROW");
+	instructions.setCharacterSize(24);
+	instructions.setFillColor(sf::Color::Red);
+	instructions.setStyle(sf::Text::Bold);
+	textRect = instructions.getLocalBounds();
+	instructions.setOrigin(textRect.left + textRect.width/2.0, SCREEN_HEIGHT/7.0);
+	instructions.setPosition(sf::Vector2f(SCREEN_WIDTH/1.5, SCREEN_HEIGHT/2.0));
+	window.draw(instructions);
+	instructions.setString("Press SPACE to play");
+	instructions.setCharacterSize(24);
+	instructions.setFillColor(sf::Color::Red);
+	instructions.setStyle(sf::Text::Bold);
+	textRect = instructions.getLocalBounds();
+	instructions.setOrigin(textRect.left + textRect.width/2.0, SCREEN_HEIGHT/2.0);
+	instructions.setPosition(sf::Vector2f(SCREEN_WIDTH/2.0, SCREEN_HEIGHT/0.75));
+	window.draw(instructions);
+	window.display();
+}
+
 void render(sf::RenderWindow& window, Grid& world) {
 	Object* obj;
 	for (int i = 0; i < world.getSize(); i++) {
@@ -272,7 +335,7 @@ void timeThread(pair<sf::RenderWindow&, Grid&> p) {
 			clock.restart();
 		}
 	}
-	cout << "Game over" << endl;
+	cout << "Game Over" << endl;
 }
 
 vector<Result> takeTurn(Grid& world) {
