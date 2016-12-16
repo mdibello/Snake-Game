@@ -114,7 +114,7 @@ class Snake : public Object {
 		Result move(Grid& world);
 		void draw(sf::RenderWindow& window, int index);
 		Obj whatAmI() { return SNAKE; }
-		void setDirection(Direction d) { Snake::direction = d; }
+		void setDirection(Direction d) { Snake::newDirection = d; }
 		Direction getDirection() { return direction; }
 		void resetMoveStatus() { hasMovedYet = false; }
 		sf::Color getColor() { return color; }
@@ -124,6 +124,7 @@ class Snake : public Object {
 		int playerID;
 		sf::Color color;
 		Direction direction;
+		Direction newDirection;
 		bool hasMovedYet;
 };
 
@@ -450,18 +451,22 @@ Snake::Snake(Coord c, int playerNumber) : Object(coordToIndex(c)) {
 		case 0:
 			Snake::color = sf::Color(154, 205, 50); // yellowgreen
 			Snake::direction = DOWN;
+			Snake::newDirection = DOWN;
 			break;
 		case 1:
 			Snake::color = sf::Color(85, 107, 47); // darkolivegreen
 			Snake::direction = UP;
+			Snake::newDirection = UP;
 			break;
 		case 2:
 			Snake::color = sf::Color(0, 100, 0); // darkgreen
 			Snake::direction = RIGHT;
+			Snake::newDirection = RIGHT;
 			break;
 		case 3:
 			Snake::color = sf::Color(46, 139, 87); // seagreen
 			Snake::direction = LEFT;
+			Snake::newDirection = LEFT;
 			break;
 	}
 }
@@ -481,7 +486,7 @@ Result Snake::move(Grid& world) {
 	}
 	Snake::hasMovedYet = true;
 	Coord new_location = Snake::getLocation();
-	switch (Snake::direction) {
+	switch (Snake::newDirection) {
 		case UP:
 			new_location.y++;
 			break;
@@ -517,7 +522,7 @@ Result Snake::move(Grid& world) {
 		Snake::body.push_back(Snake::getLocation());
 	}
 	world.swapObjects(coordToIndex(Snake::getLocation()), coordToIndex(new_location));
-	// move body loop
+	Snake::direction = Snake::newDirection;
 	return SUCCESS;
 }
 
